@@ -11,6 +11,15 @@ YUP2ZUP = np.array([[[1, 0, 0, 0],
                     [0, 1, 0, 0],
                     [0, 0, 0, 1]]], dtype = np.float64)
 
+left_rot_bias = np.array([[[1, 0, 0, 0], 
+                    [0, 0, -1, 0], 
+                    [0, 1, 0, 0],
+                    [0, 0, 0, 1]]], dtype = np.float64)
+
+right_rot_bias = np.array([[[0, 1, 0, 0], 
+                    [0, 0, -1, 0], 
+                    [-1, 0, 0, 0],
+                    [0, 0, 0, 1]]], dtype = np.float64)
 
 class VisionProStreamer:
 
@@ -22,6 +31,12 @@ class VisionProStreamer:
         self.recording = [] 
         self.latest = None 
         self.axis_transform = YUP2ZUP
+        self.left_hand_rot = left_rot_bias
+        self.right_hand_rot = right_rot_bias
+        
+        self.last = time.time()
+        self.now = time.time()        
+        
         self.start_streaming()
 
     def start_streaming(self): 
@@ -52,8 +67,14 @@ class VisionProStreamer:
                         "right_pinch_distance": get_pinch_distance(response.right_hand.skeleton.jointMatrices),
                         # "rgb": response.rgb, # TODO: should figure out how to get the rgb image from vision pro 
                     }
-                    transformations["right_wrist_roll"] = get_wrist_roll(transformations["right_wrist"])
-                    transformations["left_wrist_roll"] = get_wrist_roll(transformations["left_wrist"])
+
+                    transformations["right_wrist_roll"] = get_wrist_roll(transformations["right_wrist"] ) 
+                    transformations["left_wrist_roll"] = get_wrist_roll(transformations["left_wrist"]) #@ self.left_hand_rot
+                    
+                    #print("trans: ", transformations)
+                    self.now = time.time()
+                    print("diff: ", self.now - self.last)
+                    self.last = self.now
                     if self.record: 
                         self.recording.append(transformations)
                     self.latest = transformations 

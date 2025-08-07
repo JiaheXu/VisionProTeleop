@@ -7,7 +7,7 @@ from typing import *
 if __name__ == "__main__": 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ip', type = str, required = True)
+    parser.add_argument('--ip', type = str, default = "192.168.1.99")
     parser.add_argument('--record', action = 'store_true')
     args = parser.parse_args()
 
