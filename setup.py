@@ -11,7 +11,7 @@ setup(
     author_email='younghyo@mit.edu',
     packages=find_packages(),
     install_requires=[
-        'numpy', 'grpcio', 'grpcio-tools', 'matplotlib','trimesh','anytree','pyyaml','lxml','sapien','nlopt'
+        'numpy', 'grpcio', 'grpcio-tools', 'matplotlib','trimesh','anytree','pyyaml','lxml','sapien','nlopt','pycollada==0.8'
     ],
     extras_require={
     },

@@ -73,7 +73,7 @@ class VisionProStreamer:
                     
                     #print("trans: ", transformations)
                     self.now = time.time()
-                    print("diff: ", self.now - self.last)
+                    # print("diff: ", self.now - self.last)
                     self.last = self.now
                     if self.record: 
                         self.recording.append(transformations)
