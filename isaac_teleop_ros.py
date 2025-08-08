@@ -59,6 +59,8 @@ class IsaacVisualizer:
     def __init__(self, args): 
         # self.s = VisionProStreamer(args.ip, args.record)
         # self.env = IsaacVisualizerEnv(args)
+        args.task = "ShadowHandStackBlocks"
+        # self.env = IsaacTasks(args)
 
         # self.retargeting_type = RetargetingType.vector
         self.retargeting_type = RetargetingType.custom
@@ -108,7 +110,7 @@ class IsaacVisualizer:
         joint_pos = keypoint_3d @ right_wrist_rot
         retargeting_type = self.right_retargeting.optimizer.retargeting_type
 
-        print("retargeting_type: ", retargeting_type)
+        # print("retargeting_type: ", retargeting_type)
 
         indices = self.right_retargeting.optimizer.target_link_human_indices
         
