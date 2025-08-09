@@ -23,9 +23,9 @@
  or tort (including negligence or otherwise) arising in any way out of the use of this
  software, even if advised of the possibility of such damage.
 -->
-<robot name="bimanual_shadowhand_motor">
+<robot name="shadow_left">
   <material name="Grey">
-    <color rgba="0.2 0.2 0.2 "/>
+    <color rgba="0.2 0.2 0.2 1.0"/>
   </material>
   <material name="LightGrey">
     <color rgba="0.6 0.6 0.6 1.0"/>
@@ -93,11 +93,11 @@
     </inertial>
     
     <visual>
-      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="palm_visual">
-        <mesh filename="meshes/visual/palm/palm_left.dae" scale="0.001 0.001 0.001"/>
+        <mesh filename="meshes/visual/palm/palm_E3M5_left.obj" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="Grey"/>
+      <material name="LightGrey"/>
     </visual>
 
     <collision>
@@ -631,9 +631,9 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="lfmetacarpal_visual">
-        <mesh filename="meshes/visual/lf_metacarpal/lf_metacarpal_E3M5_left.dae" scale="0.001 0.001 0.001"/>
+        <mesh filename="meshes/visual/lf_metacarpal/lf_metacarpal_E3M5_left.obj" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="Grey"/>
+      <material name="LightGrey"/>
     </visual>
     <!-- <collision>
       <origin rpy="0 0.9599 0" xyz="0.026986375 0 0.019"/>

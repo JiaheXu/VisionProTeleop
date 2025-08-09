@@ -1,5 +1,4 @@
 from avp_stream.isaac_env import IsaacVisualizerEnv
-from avp_stream.isaac_tasks import IsaacTasks
 from avp_stream import VisionProStreamer
 import time 
 from typing import * 
@@ -19,6 +18,8 @@ import std_msgs
 import rospy
 
 from avp_stream.tasks.shadow_hand_stack_blocks import *
+from avp_stream.tasks.shadow_hand_base import *
+
 
 ROT_X = np.array([[[1, 0, 0, 0], 
                     [0, 0, -1, 0], 
@@ -62,7 +63,8 @@ class IsaacVisualizer:
     def __init__(self, args): 
         # self.s = VisionProStreamer(args.ip, args.record)
         # self.env = IsaacVisualizerEnv(args)
-        args.task = "ShadowHandStackBlocks"
+        # args.task = "ShadowHandStackBlocks"
+        args.task = "ShadowHandBase"        
         self.env = eval(args.task)(args)
 
         # self.retargeting_type = RetargetingType.vector
@@ -148,22 +150,22 @@ class IsaacVisualizer:
 
     def run(self):
         data = np.load("test.npy", allow_pickle = True)
-        for j in range(2):
+        for j in range(1):
             for i in range(1000):
                 # time.sleep(0.05)
 
                 latest = data[i]
-
                 transformations = copy.deepcopy(latest)
-                visionos_head = transformations['head']
 
                 right_qpos = self.right_hand_retarget(transformations)
                 left_qpos = self.left_hand_retarget(transformations)
-                print("right_qpos: ", right_qpos)
-                print("left_qpos: ", left_qpos)                
+                # print("right_qpos: ", right_qpos)
+                # print("left_qpos: ", left_qpos)                
                 action = np.concatenate( [right_qpos, left_qpos] )
-                print("action: ", action.shape)
-                # self.env.step(np2tensor(latest, self.env.device))
+                # print("action: ", action.shape)
+                latest['right_action'] = torch.from_numpy(right_qpos)
+                latest['left_action'] = torch.from_numpy(left_qpos)
+                self.env.step(np2tensor(latest, self.env.device))
             # np.save("test.npy", data, allow_pickle=True)
 
 # python3 example/retarget_debug_node.py \
@@ -189,4 +191,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     vis = IsaacVisualizer(args)
-    # vis.run()
+    vis.run()
