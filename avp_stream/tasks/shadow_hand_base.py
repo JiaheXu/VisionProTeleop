@@ -289,9 +289,31 @@ class ShadowHandBase:
 
         print("new_root_state: ", new_root_state.shape)
         new_root_state = new_root_state.view(-1, 13)
+        order = torch.tensor([
+            0, 1, 2, 3,
+            12, 13, 14, 15, 16,
+            4, 5, 6, 7,
+            8, 9, 10, 11,
+            17, 18, 19, 20, 21
+        ])
+        # isaaqcgym dof_names:  [
+        #     'FFJ4', 'FFJ3', 'FFJ2', 'FFJ1',
+        #     'LFJ5', 'LFJ4', 'LFJ3', 'LFJ2', 'LFJ1', 
+        #     'MFJ4', 'MFJ3', 'MFJ2', 'MFJ1', 
+        #     'RFJ4', 'RFJ3', 'RFJ2', 'RFJ1', 
+        #     'THJ5', 'THJ4', 'THJ3', 'THJ2', 'THJ1'
+        # ]
 
-        self.gym.set_actor_dof_position_targets(self.envs[0], self.right_hand, transformations['right_action'])
-        self.gym.set_actor_dof_position_targets(self.envs[0], self.left_hand, transformations['left_action'])
+        # dexretarget: target_joint_names:  [
+        #    'FFJ4', 'FFJ3', 'FFJ2', 'FFJ1', 
+        #    'MFJ4', 'MFJ3', 'MFJ2', 'MFJ1', 
+        #    'RFJ4', 'RFJ3', 'RFJ2', 'RFJ1', 
+        #    'LFJ5', 'LFJ4', 'LFJ3', 'LFJ2', 'LFJ1', 
+        #    'THJ5', 'THJ4', 'THJ3', 'THJ2', 'THJ1'
+        # ]
+
+        self.gym.set_actor_dof_position_targets(self.envs[0], self.right_hand, transformations['right_action'][order])
+        self.gym.set_actor_dof_position_targets(self.envs[0], self.left_hand, transformations['left_action'][order])
         return new_root_state
 
 

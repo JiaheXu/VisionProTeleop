@@ -63,8 +63,8 @@ class IsaacVisualizer:
     def __init__(self, args): 
         # self.s = VisionProStreamer(args.ip, args.record)
         # self.env = IsaacVisualizerEnv(args)
-        # args.task = "ShadowHandStackBlocks"
-        args.task = "ShadowHandBase"        
+        args.task = "ShadowHandStackBlocks"
+        # args.task = "ShadowHandBase" 
         self.env = eval(args.task)(args)
 
         # self.retargeting_type = RetargetingType.vector
