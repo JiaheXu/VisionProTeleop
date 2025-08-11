@@ -207,19 +207,19 @@ class IsaacVisualizerEnv:
         new_root_state = self.root_state
 
         self.visionos_head = transformations['head'] 
-        self.sim_right_wrist = transformations['right_wrist'] #@ VISIONOS_RIGHT_HAND_TO_LEAP 
-        self.sim_left_wrist = transformations['left_wrist'] # @ VISIONOS_LEFT_HAND_TO_LEAP
+        self.sim_right_wrist = transformations['right_wrist_sim'] #@ VISIONOS_RIGHT_HAND_TO_LEAP 
+        self.sim_left_wrist = transformations['left_wrist_sim'] # @ VISIONOS_LEFT_HAND_TO_LEAP
 
-        sim_right_fingers = torch.cat([self.sim_right_wrist @ finger for finger in transformations['right_fingers']], dim = 0)
-        sim_left_fingers = torch.cat([self.sim_left_wrist @ finger for finger in transformations['left_fingers']], dim = 0)
+        sim_right_fingers = transformations['right_fingers']
+        sim_left_fingers = transformations['left_fingers']
 
         self.sim_right_fingers = sim_right_fingers 
         self.sim_left_fingers = sim_left_fingers 
 
         new_root_state = deepcopy(self.root_state)
         new_root_state[:, 0, :7] = mat2posquat(self.visionos_head )
-        new_root_state[:, 1, :7] = mat2posquat(self.sim_right_wrist @ ROT_X @ ROT_Y_)
-        new_root_state[:, 2, :7] = mat2posquat(self.sim_left_wrist @ ROT_X @ ROT_Y )
+        new_root_state[:, 1, :7] = mat2posquat(self.sim_right_wrist)
+        new_root_state[:, 2, :7] = mat2posquat(self.sim_left_wrist)
 
         new_root_state[:, 3:28, :7] = mat2posquat(self.sim_right_fingers )#  
         new_root_state[:, 28:53, :7] = mat2posquat(self.sim_left_fingers )# 
