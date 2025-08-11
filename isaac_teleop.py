@@ -71,7 +71,7 @@ APPLE2MEDIAPIPE = [
 class IsaacVisualizer:
 
     def __init__(self, args): 
-        # self.s = VisionProStreamer(args.ip, args.record)
+        self.s = VisionProStreamer(args.ip, args.record)
         # self.env = IsaacVisualizerEnv(args)
         
         args.task = "ShadowHandStackBlocks"
@@ -179,13 +179,13 @@ class IsaacVisualizer:
 
     def run(self):
 
+        while True:
+            latest = self.transfer( self.s.latest )
 
+        # data = np.load("test.npy", allow_pickle = True)
+        # for latest in data:
+        #     latest = self.transfer(latest)
 
-        # while True:
-        #     latest = self.transfer( self.s.latest )
-        data = np.load("test.npy", allow_pickle = True)
-        for latest in data:
-            latest = self.transfer(latest)
             transformations = copy.deepcopy(latest)
 
             right_qpos = self.right_hand_retarget(transformations)
@@ -197,6 +197,7 @@ class IsaacVisualizer:
             latest['right_action'] = right_qpos
             latest['left_action'] = left_qpos
             self.env.step(np2tensor(latest, self.env.device))
+            time.sleep(0.02)
 
 
 # python3 example/retarget_debug_node.py \
