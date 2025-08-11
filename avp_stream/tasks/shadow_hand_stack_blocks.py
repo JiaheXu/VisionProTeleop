@@ -339,19 +339,19 @@ class ShadowHandStackBlocks:
         self.sim_right_wrist = transformations['right_wrist'] #@ VISIONOS_RIGHT_HAND_TO_LEAP 
         self.sim_left_wrist = transformations['left_wrist'] # @ VISIONOS_LEFT_HAND_TO_LEAP
 
-        sim_right_fingers = torch.cat([self.sim_right_wrist @ finger for finger in transformations['right_fingers']], dim = 0)
-        sim_left_fingers = torch.cat([self.sim_left_wrist @ finger for finger in transformations['left_fingers']], dim = 0)
+        # sim_right_fingers = torch.cat([self.sim_right_wrist @ finger for finger in transformations['right_fingers']], dim = 0)
+        # sim_left_fingers = torch.cat([self.sim_left_wrist @ finger for finger in transformations['left_fingers']], dim = 0)
 
-        self.sim_right_fingers = sim_right_fingers 
-        self.sim_left_fingers = sim_left_fingers 
+        # self.sim_right_fingers = sim_right_fingers 
+        # self.sim_left_fingers = sim_left_fingers 
 
         new_root_state = deepcopy(self.root_state)
         new_root_state[:, 1, :7] = mat2posquat(self.visionos_head )
-        new_root_state[:, 2, :7] = mat2posquat(self.sim_right_wrist @ ROT_X @ ROT_Y_) # right wrist axis
-        new_root_state[:, 3, :7] = mat2posquat(self.sim_left_wrist @ ROT_X @ ROT_Y ) # left wrist axis
+        new_root_state[:, 2, :7] = mat2posquat(transformations['right_wrist_sim']) # right wrist axis
+        new_root_state[:, 3, :7] = mat2posquat(transformations['left_wrist_sim']) # left wrist axis
 
-        new_root_state[:, 4, :7] = mat2posquat(self.sim_right_wrist @ ROT_X @ ROT_Y_) #right hand root
-        new_root_state[:, 5, :7] = mat2posquat(self.sim_left_wrist @ ROT_X @ ROT_Y) #left hand root
+        new_root_state[:, 4, :7] = mat2posquat(transformations['right_wrist_sim'])#right hand root
+        new_root_state[:, 5, :7] = mat2posquat(transformations['left_wrist_sim']) #left hand root
 
         print("new_root_state: ", new_root_state.shape)
         new_root_state = new_root_state.view(-1, 13)

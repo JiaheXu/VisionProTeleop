@@ -24,27 +24,17 @@ from avp_stream.tasks.shadow_hand_base import *
 ROT_X = np.array([[[1, 0, 0, 0], 
                     [0, 0, -1, 0], 
                     [0, 1, 0, 0],
-                    [0, 0, 0, 1]]], dtype = np.float32)
+                    [0, 0, 0, 1]]], dtype = np.float64)
 
 ROT_Y = np.array([[[0, 0, 1, 0], 
                     [0, 1,  0, 0], 
                     [-1, 0, 0, 0],
-                    [0, 0, 0, 1]]], dtype = np.float32)
+                    [0, 0, 0, 1]]], dtype = np.float64)
 
 ROT_Y_ = np.array([[[0, 0, -1, 0], 
                     [0, 1,  0, 0], 
                     [1, 0, 0, 0],
-                    [0, 0, 0, 1]]], dtype = np.float32)
-
-ROT_Z = np.array([[[0, -1, 0, 0], 
-                    [1, 0,  0, 0], 
-                    [0, 0, 1, 0],
-                    [0, 0, 0, 1]]], dtype = np.float32)
-
-ROT_Z_ = np.array([[[0, 1, 0, 0], 
-                    [-1, 0,  0, 0], 
-                    [0, 0, 1, 0],
-                    [0, 0, 0, 1]]], dtype = np.float32)
+                    [0, 0, 0, 1]]], dtype = np.float64)
 
 OPERATOR2MANO_RIGHT = np.array(
     [
@@ -73,8 +63,8 @@ class IsaacVisualizer:
     def __init__(self, args): 
         # self.s = VisionProStreamer(args.ip, args.record)
         # self.env = IsaacVisualizerEnv(args)
-        args.task = "ShadowHandStackBlocks"
-        # args.task = "ShadowHandBase" 
+        # args.task = "ShadowHandStackBlocks"
+        args.task = "ShadowHandBase"        
         self.env = eval(args.task)(args)
 
         # self.retargeting_type = RetargetingType.vector
@@ -158,26 +148,13 @@ class IsaacVisualizer:
         qpos = self.left_retargeting.retarget(ref_value)
         return qpos
 
-    def transfer(self, original_transformation):
-
-        transformations = copy.deepcopy( original_transformation)
-
-        transformations['head'] = torch.from_numpy(ROT_Z_) @ transformations['head'] @ torch.from_numpy(ROT_Z)
-        transformations['right_wrist'] = torch.from_numpy(ROT_Z_)  @ transformations['right_wrist']
-        transformations['left_wrist'] = torch.from_numpy(ROT_Z_)  @ transformations['left_wrist']
-
-        transformations['right_wrist_sim'] = transformations['right_wrist'] @ torch.from_numpy( ROT_X @ ROT_Y_)
-        transformations['left_wrist_sim'] = transformations['left_wrist'] @ torch.from_numpy( ROT_X @ ROT_Y)
-
-        return transformations
-
     def run(self):
         data = np.load("test.npy", allow_pickle = True)
         for j in range(1):
             for i in range(1000):
                 # time.sleep(0.05)
 
-                latest = self.transfer( data[i] )
+                latest = data[i]
                 transformations = copy.deepcopy(latest)
 
                 right_qpos = self.right_hand_retarget(transformations)
