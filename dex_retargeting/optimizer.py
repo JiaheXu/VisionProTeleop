@@ -34,7 +34,8 @@ class Optimizer:
         self.fixed_joint_indices = np.array([i for i in range(robot.dof) if i not in target_joint_index], dtype=int)
         self.opt = nlopt.opt(nlopt.LD_SLSQP, len(target_joint_index)) # ??? change an optimizer?
         self.dof = len(target_joint_index)
-
+        print("target_joint_names: ", target_joint_names)
+        print("target_joint_index: ", target_joint_index)
         self.root_index = self.get_link_indices(["palm"])[0]
         # self.debug_link_names = ["palm", "thtip", "fftip", "mftip", "rftip", "lftip"]
         self.debug_link_names = ["palm", "thmiddle", "thtip", "ffmiddle", "fftip", "mfmiddle", "mftip", "rfmiddle", "rftip", "lfmiddle", "lftip"]

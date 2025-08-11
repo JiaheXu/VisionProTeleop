@@ -16,8 +16,8 @@ from avp_stream.utils.trn_constants import *
 from copy import deepcopy
 from typing import * 
 
-CUR_PATH = Path(__file__).parent.resolve()
-
+CUR_PATH = (Path(__file__).parent.resolve())
+ASSET_PATH = CUR_PATH.parent
 ROT_X = np.array([[[1, 0, 0, 0], 
                     [0, 0, -1, 0], 
                     [0, 1, 0, 0],
@@ -33,10 +33,15 @@ ROT_Y_ = np.array([[[0, 0, -1, 0],
                     [1, 0, 0, 0],
                     [0, 0, 0, 1]]], dtype = np.float64)
 
+ROT_Z = np.array([[[ 0, -1, 0, 0], 
+                    [1,  0, 0, 0], 
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1]]], dtype = np.float64)
+
 class ShadowHandStackBlocks: 
 
     def __init__(self, args):
-        print("in stack_block init()")
+
         self.args = args 
 
         # acquire gym interface
@@ -73,20 +78,70 @@ class ShadowHandStackBlocks:
         # from now on, we will use the tensor API that can run on CPU or GPU
         self.gym.prepare_sim(self.sim)
         self.initialize_tensors()
-
+        self.actors = []
+    # def _env_init(self):
 
 
     def _load_asset(self):
 
-        self.axis = load_axis(self.gym, self.sim, self.device, 'normal', f'{CUR_PATH}/assets')
-        self.small_axis = load_axis(self.gym, self.sim, self.device, 'small', f'{CUR_PATH}/assets')
-        self.huge_axis = load_axis(self.gym, self.sim, self.device, 'huge', f'{CUR_PATH}/assets')
-
+        # self.axis = load_axis(self.gym, self.sim, self.device, 'normal', f'{CUR_PATH}/assets')
+        # self.small_axis = load_axis(self.gym, self.sim, self.device, 'small', f'{CUR_PATH}/assets')
+        # self.huge_axis = load_axis(self.gym, self.sim, self.device, 'huge', f'{CUR_PATH}/assets')
+        self.axis = load_axis(self.gym, self.sim, self.device, 'normal', f'{ASSET_PATH}/assets')
+        self.small_axis = load_axis(self.gym, self.sim, self.device, 'small', f'{ASSET_PATH}/assets')
+        self.huge_axis = load_axis(self.gym, self.sim, self.device, 'huge', f'{ASSET_PATH}/assets')
         asset_options = gymapi.AssetOptions()
         asset_options.disable_gravity = True
         asset_options.fix_base_link = True
         self.sphere = self.gym.create_sphere(self.sim, 0.008, asset_options)
 
+        # load hand asset
+        # asset_root = f'{ASSET_PATH}/assets'
+        # asset_file = 'urdf/shadow_hand/shadow_hand_right.urdf'
+        asset_root = f'{ASSET_PATH.parent}/assets'
+        asset_file = 'robots/shadow_hand/shadow_hand_right.urdf'
+
+
+        asset_options = gymapi.AssetOptions()
+        asset_options.fix_base_link = True
+        asset_options.use_mesh_materials = True
+        asset_options.disable_gravity = True
+        asset_options.flip_visual_attachments = False
+        self.right_hand_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
+
+        # asset_root = f'{ASSET_PATH}/assets'
+        # asset_file = 'urdf/shadow_hand/shadow_hand_left.urdf'
+        asset_root = f'{ASSET_PATH.parent}/assets'
+        asset_file = 'robots/shadow_hand/shadow_hand_left.urdf'
+        
+        print("asset_root: ", asset_root)
+        print("asset_file: ", asset_file)
+
+        asset_options = gymapi.AssetOptions()
+        asset_options.fix_base_link = True
+        asset_options.use_mesh_materials = True
+        asset_options.disable_gravity = True
+        asset_options.flip_visual_attachments = False
+        self.left_hand_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
+        
+        asset_file = 'urdf/objects/cube_multicolor.urdf'
+        asset_options = gymapi.AssetOptions()
+        asset_options.density = 100
+        asset_options.fix_base_link = False
+        asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
+        self.block1_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
+        self.block2_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
+
+
+        # create table asset
+        table_dims = gymapi.Vec3(1.0, 1.0, 0.05)
+        asset_options = gymapi.AssetOptions()
+        asset_options.fix_base_link = True
+        asset_options.flip_visual_attachments = True
+        asset_options.collapse_fixed_joints = True
+        asset_options.disable_gravity = True
+        asset_options.thickness = 0.01
+        self.table_asset = self.gym.create_box(self.sim, table_dims.x, table_dims.y, table_dims.z, gymapi.AssetOptions())
 
     def create_env(self):
         spacing = 1.0
@@ -102,41 +157,104 @@ class ShadowHandStackBlocks:
         self.robot_actor_idxs_over_sim = [] 
         self.env_side_actor_idxs_over_sim = []
 
-        for env_idx in range(self.num_envs):
-            env = self.gym.create_env(self.sim, env_lower, env_upper, 1)
-            self.envs.append(env)
 
-            self.head_axis = self.gym.create_actor(env, self.axis, gymapi.Transform(), 'head', 0)
+        env = self.gym.create_env(self.sim, env_lower, env_upper, 1)
+        self.envs.append(env)
+        
+        self.env_axis = self.gym.create_actor(env, self.huge_axis, gymapi.Transform() , 'env_axis', 1, 0, 0)
+        self.head_axis = self.gym.create_actor(env, self.axis, gymapi.Transform(), 'head', 1, 0, 0)
 
-            self.right_wrist_axis = self.gym.create_actor(env, self.axis, gymapi.Transform(), 'right_wrist', 1)
-            self.left_wrist_axis = self.gym.create_actor(env, self.axis, gymapi.Transform(), 'left_wrist', 2)
+        self.right_wrist_axis = self.gym.create_actor(env, self.axis, gymapi.Transform(), 'right_wrist', 1, 0, 0)
+        self.left_wrist_axis = self.gym.create_actor(env, self.axis, gymapi.Transform(), 'left_wrist', 1, 0, 0)
+
+        # add right hand
+        right_hand_start_pose = gymapi.Transform()
+        right_hand_start_pose.p = gymapi.Vec3(-0.2, -0.2, 0.2)
+        right_hand_start_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
+        self.right_hand = self.gym.create_actor(env, self.right_hand_asset, right_hand_start_pose, "right_hand", 1, 0, 0)
+
+        # add left hand
+        left_hand_start_pose = gymapi.Transform()
+        left_hand_start_pose.p = gymapi.Vec3(-0.2, 0.2, 0.2)
+        left_hand_start_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
+        self.left_hand = self.gym.create_actor(env, self.left_hand_asset, left_hand_start_pose, "left_hand", 1, 0, 0)
+
+        # add block1
+        block1_start_pose = gymapi.Transform()
+        block1_start_pose.p = gymapi.Vec3(0.0, 0.1, 0.3)
+        block1_start_pose.r = gymapi.Quat().from_euler_zyx(1.57, 1.57, 0)
+        self.block1 = self.gym.create_actor(env, self.block1_asset, block1_start_pose, "block1", 1, 0, 0)
+
+        # add block2
+        block2_start_pose = gymapi.Transform()
+        block2_start_pose.p = gymapi.Vec3(0.0, -0.1, 0.3)
+        block2_start_pose.r = gymapi.Quat().from_euler_zyx(1.57, 1.57, 0)
+        self.block2 = self.gym.create_actor(env, self.block2_asset, block2_start_pose, "block2", 1, 0, 0)
+        
+        # add table
+        table_pose = gymapi.Transform()
+        table_pose.p = gymapi.Vec3(0.0, 0.0, 0.0)
+        table_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
+        self.table = self.gym.create_actor(env, self.table_asset, table_pose, "table", 1, 0, 0)
+
+        # get array of DOF names
+        dof_names = self.gym.get_asset_dof_names(self.right_hand_asset)
+        print("dof_names: ", dof_names)
+        # get array of DOF properties
+        dof_props = self.gym.get_asset_dof_properties(self.right_hand_asset)
+
+        # create an array of DOF states that will be used to update the actors
+        num_dofs = self.gym.get_asset_dof_count(self.right_hand_asset)
+        print("num_dofs: ", num_dofs)
+        
+        dof_states = np.zeros(num_dofs, dtype=gymapi.DofState.dtype)
+
+        # get list of DOF types
+        dof_types = [self.gym.get_asset_dof_type(self.right_hand_asset, i) for i in range(num_dofs)]
+
+        # get the position slice of the DOF state array
+        dof_positions = dof_states['pos']
+
+        # get the limit-related slices of the DOF properties array
+        stiffnesses = dof_props['stiffness']
+        dampings = dof_props['damping']
+        armatures = dof_props['armature']
+        has_limits = dof_props['hasLimits']
+        lower_limits = dof_props['lower']
+        upper_limits = dof_props['upper']
+
+        props = self.gym.get_actor_dof_properties(env, self.right_hand)
+        props["driveMode"] = (
+            gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS,
+            gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS,
+            gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS,
+            gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, #gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS,
+            #gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS
+        )
+        props["stiffness"] = (
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, #1.0, 1.0,
+            #1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+        )
+        Tval = 0.1
+        Rval = 0.5
+
+        props["damping"] = (
+            0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+            0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+            0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+            0.1, 0.1, 0.1, 0.1,
+        )            
+
+        self.gym.set_actor_dof_properties(env, self.right_hand, props)
+        self.gym.set_actor_dof_states(env, self.right_hand, dof_states, gymapi.STATE_ALL)
+
+        self.gym.set_actor_dof_properties(env, self.left_hand, props)
+        self.gym.set_actor_dof_states(env, self.left_hand, dof_states, gymapi.STATE_ALL)
 
 
-            # SPHERE
-            for i in range(25): 
-                
-                finger_1 = self.gym.create_actor(env, self.sphere, gymapi.Transform(), f'right_finger_{i}', 3 + i )
-                if i in [0, 4, 9, 14, 19, 24]:
-                    self.gym.set_rigid_body_color(env, finger_1, 0, gymapi.MESH_VISUAL_AND_COLLISION, gymapi.Vec3(1, 1, 0))
-                else:
-                    self.gym.set_rigid_body_color(env, finger_1, 0, gymapi.MESH_VISUAL_AND_COLLISION, gymapi.Vec3(1, 1, 1))
-
-            for i in range(25):
-                finger_2 = self.gym.create_actor(env, self.sphere, gymapi.Transform(), f'left_finger_{i}', 28 + i )
-
-                if i in [0, 4, 9, 14, 19, 24]:
-                    self.gym.set_rigid_body_color(env, finger_2, 0, gymapi.MESH_VISUAL_AND_COLLISION, gymapi.Vec3(1, 1, 0))
-                else:
-                    self.gym.set_rigid_body_color(env, finger_2, 0, gymapi.MESH_VISUAL_AND_COLLISION, gymapi.Vec3(1, 1, 1))
-
-            # SMALL AXIS
-            for i in range(25): 
-                finger_1 = self.gym.create_actor(env, self.small_axis, gymapi.Transform(), f'right_finger_{i}', 53 + i  )
-
-            for i in range(25):
-                finger_2 = self.gym.create_actor(env, self.small_axis, gymapi.Transform(), f'left_finger_{i}', 78 + i )
-
-            self.env_axis = self.gym.create_actor(env, self.huge_axis, gymapi.Transform(), 'env_axis', 103 )
 
 
     def initialize_tensors(self): 
@@ -161,12 +279,23 @@ class ShadowHandStackBlocks:
     # will be overloaded
     def step(self, transformation: Dict[str, torch.Tensor], sync_frame_time = False): 
 
+        ###############################################################################
+        # Original version
+        ###############################################################################
+        # self.simulate()
+        # new_root_state = self.modify_root_state(transformation)
+        # env_side_actor_idxs = torch.arange(0, 6, dtype = torch.int32)
+        # self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(new_root_state), gymtorch.unwrap_tensor(env_side_actor_idxs), len(env_side_actor_idxs))
+        # # update viewer
+        # self.render(sync_frame_time)
+        ###############################################################################
+
+        #print("actions.dtype: ", actions.dtype)
+        new_root_state = self.pre_physics_step(transformation)
         self.simulate()
-
-        new_root_state = self.modify_root_state(transformation)
-        env_side_actor_idxs = torch.arange(0, 103, dtype = torch.int32)
+        # self.load_observations()
+        env_side_actor_idxs = torch.arange(0, 9, dtype = torch.int32)
         self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(new_root_state), gymtorch.unwrap_tensor(env_side_actor_idxs), len(env_side_actor_idxs))
-
         # update viewer
         self.render(sync_frame_time)
 
@@ -202,7 +331,7 @@ class ShadowHandStackBlocks:
         if sync_frame_time:
             self.gym.sync_frame_time(self.sim)
 
-    def modify_root_state(self, transformations): 
+    def pre_physics_step(self, transformations): 
 
         new_root_state = self.root_state
 
@@ -217,17 +346,40 @@ class ShadowHandStackBlocks:
         self.sim_left_fingers = sim_left_fingers 
 
         new_root_state = deepcopy(self.root_state)
-        new_root_state[:, 0, :7] = mat2posquat(self.visionos_head )
-        new_root_state[:, 1, :7] = mat2posquat(self.sim_right_wrist @ ROT_X @ ROT_Y_)
-        new_root_state[:, 2, :7] = mat2posquat(self.sim_left_wrist @ ROT_X @ ROT_Y )
+        new_root_state[:, 1, :7] = mat2posquat(self.visionos_head )
+        new_root_state[:, 2, :7] = mat2posquat(self.sim_right_wrist @ ROT_X @ ROT_Y_) # right wrist axis
+        new_root_state[:, 3, :7] = mat2posquat(self.sim_left_wrist @ ROT_X @ ROT_Y ) # left wrist axis
 
-        new_root_state[:, 3:28, :7] = mat2posquat(self.sim_right_fingers )#  
-        new_root_state[:, 28:53, :7] = mat2posquat(self.sim_left_fingers )# 
-        new_root_state[:, 53:78, :7] = mat2posquat(self.sim_right_fingers)#
-        new_root_state[:, 78:103, :7] = mat2posquat(self.sim_left_fingers)#
-        # new_root_state[:, 103, :7] = mat2posquat(transformed_wrist_right)
+        new_root_state[:, 4, :7] = mat2posquat(self.sim_right_wrist @ ROT_X @ ROT_Y_) #right hand root
+        new_root_state[:, 5, :7] = mat2posquat(self.sim_left_wrist @ ROT_X @ ROT_Y) #left hand root
+
+        print("new_root_state: ", new_root_state.shape)
         new_root_state = new_root_state.view(-1, 13)
+        order = torch.tensor([
+            0, 1, 2, 3,
+            12, 13, 14, 15, 16,
+            4, 5, 6, 7,
+            8, 9, 10, 11,
+            17, 18, 19, 20, 21
+        ])
+        # isaaqcgym dof_names:  [
+        #     'FFJ4', 'FFJ3', 'FFJ2', 'FFJ1',
+        #     'LFJ5', 'LFJ4', 'LFJ3', 'LFJ2', 'LFJ1', 
+        #     'MFJ4', 'MFJ3', 'MFJ2', 'MFJ1', 
+        #     'RFJ4', 'RFJ3', 'RFJ2', 'RFJ1', 
+        #     'THJ5', 'THJ4', 'THJ3', 'THJ2', 'THJ1'
+        # ]
 
+        # dexretarget: target_joint_names:  [
+        #    'FFJ4', 'FFJ3', 'FFJ2', 'FFJ1', 
+        #    'MFJ4', 'MFJ3', 'MFJ2', 'MFJ1', 
+        #    'RFJ4', 'RFJ3', 'RFJ2', 'RFJ1', 
+        #    'LFJ5', 'LFJ4', 'LFJ3', 'LFJ2', 'LFJ1', 
+        #    'THJ5', 'THJ4', 'THJ3', 'THJ2', 'THJ1'
+        # ]
+
+        self.gym.set_actor_dof_position_targets(self.envs[0], self.right_hand, transformations['right_action'][order])
+        self.gym.set_actor_dof_position_targets(self.envs[0], self.left_hand, transformations['left_action'][order])
         return new_root_state
 
 
@@ -256,5 +408,4 @@ if __name__=="__main__":
         latest = s.latest
         env.step(np2tensor(latest, env.device)) 
         print(time.time() - t0)
-
 
