@@ -24,17 +24,27 @@ from avp_stream.tasks.shadow_hand_base import *
 ROT_X = np.array([[[1, 0, 0, 0], 
                     [0, 0, -1, 0], 
                     [0, 1, 0, 0],
-                    [0, 0, 0, 1]]], dtype = np.float64)
+                    [0, 0, 0, 1]]], dtype = np.float32)
 
 ROT_Y = np.array([[[0, 0, 1, 0], 
                     [0, 1,  0, 0], 
                     [-1, 0, 0, 0],
-                    [0, 0, 0, 1]]], dtype = np.float64)
+                    [0, 0, 0, 1]]], dtype = np.float32)
 
 ROT_Y_ = np.array([[[0, 0, -1, 0], 
                     [0, 1,  0, 0], 
                     [1, 0, 0, 0],
-                    [0, 0, 0, 1]]], dtype = np.float64)
+                    [0, 0, 0, 1]]], dtype = np.float32)
+
+ROT_Z = np.array([[[0, -1, 0, 0], 
+                    [1, 0,  0, 0], 
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1]]], dtype = np.float32)
+
+ROT_Z_ = np.array([[[0, 1, 0, 0], 
+                    [-1, 0,  0, 0], 
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1]]], dtype = np.float32)
 
 OPERATOR2MANO_RIGHT = np.array(
     [
@@ -63,8 +73,9 @@ class IsaacVisualizer:
     def __init__(self, args): 
         # self.s = VisionProStreamer(args.ip, args.record)
         # self.env = IsaacVisualizerEnv(args)
-        # args.task = "ShadowHandStackBlocks"
-        args.task = "ShadowHandBase"        
+
+        args.task = "ShadowHandStackBlocks"
+        # args.task = "ShadowHandBase" 
         self.env = eval(args.task)(args)
 
         # self.retargeting_type = RetargetingType.vector
@@ -88,10 +99,10 @@ class IsaacVisualizer:
 
     def right_hand_retarget(self, transformations):
 
-        right_wrist = transformations['right_wrist'] #@ VISIONOS_RIGHT_HAND_TO_LEAP 
-        right_fingers = torch.cat([right_wrist @ finger for finger in transformations['right_fingers']], dim = 0)
+        right_wrist = transformations['right_wrist_sim'] #@ VISIONOS_RIGHT_HAND_TO_LEAP 
+        right_fingers = transformations['right_fingers']
 
-        right_wrist_rot = (right_wrist.numpy() @ ROT_X @ ROT_Y_)[0][0:3,0:3]
+        right_wrist_rot = right_wrist.numpy()[0][0:3,0:3]
         # print("right_wrist_rot: ", right_wrist_rot.shape)
         keypoint_3d = []
         keypoint_3d.append( right_wrist[0][0:3,3] )
@@ -123,10 +134,10 @@ class IsaacVisualizer:
 
     def left_hand_retarget(self, transformations):
 
-        left_wrist = transformations['left_wrist'] #@ VISIONOS_LEFT_HAND_TO_LEAP 
-        left_fingers = torch.cat([left_wrist @ finger for finger in transformations['left_fingers']], dim = 0)
+        left_wrist = transformations['left_wrist_sim'] #@ VISIONOS_LEFT_HAND_TO_LEAP 
+        left_fingers = transformations['left_fingers']
 
-        left_wrist_rot = (left_wrist.numpy() @ ROT_X @ ROT_Y)[0][0:3,0:3]
+        left_wrist_rot = left_wrist.numpy()[0][0:3,0:3]
 
         keypoint_3d = []
         keypoint_3d.append( left_wrist[0][0:3,3] )
@@ -148,13 +159,32 @@ class IsaacVisualizer:
         qpos = self.left_retargeting.retarget(ref_value)
         return qpos
 
+    def transfer(self, original_transformation):
+
+        transformations = copy.deepcopy( original_transformation)
+
+        transformations['head'] = torch.from_numpy(ROT_Z_) @ transformations['head'] @ torch.from_numpy(ROT_Z)
+        transformations['right_wrist'] = torch.from_numpy(ROT_Z_)  @ transformations['right_wrist'] # raw apple tranform rule
+        transformations['left_wrist'] = torch.from_numpy(ROT_Z_)  @ transformations['left_wrist'] # raw apple tranform rule
+
+        transformations['right_wrist_sim'] = transformations['right_wrist'] @ torch.from_numpy( ROT_X @ ROT_Y_) # unified sim tranform rule
+        transformations['left_wrist_sim'] = transformations['left_wrist'] @ torch.from_numpy( ROT_X @ ROT_Y) # unified sim tranform rule
+
+        right_fingers = torch.cat([transformations['right_wrist'] @ finger for finger in transformations['right_fingers']], dim = 0)
+        transformations['right_fingers'] = right_fingers
+
+        left_fingers = torch.cat([transformations['left_wrist'] @ finger for finger in transformations['left_fingers']], dim = 0)
+        transformations['left_fingers'] = left_fingers
+
+        return transformations
+
     def run(self):
         data = np.load("test.npy", allow_pickle = True)
         for j in range(1):
             for i in range(1000):
                 # time.sleep(0.05)
 
-                latest = data[i]
+                latest = self.transfer( data[i] )
                 transformations = copy.deepcopy(latest)
 
                 right_qpos = self.right_hand_retarget(transformations)

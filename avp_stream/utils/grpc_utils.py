@@ -5,7 +5,8 @@ def process_matrix(message):
     m = np.array([[[message.m00, message.m01, message.m02, message.m03],
                     [message.m10, message.m11, message.m12, message.m13],
                     [message.m20, message.m21, message.m22, message.m23],
-                    [0, 0, 0, 1]]])
+                    [0, 0, 0, 1]]], dtype = np.float32 )
+    
     return m 
 
 def process_matrices(skeleton, matrix = np.eye(4)):
@@ -21,7 +22,7 @@ def rotate_head(R, degrees=-90):
         [0, np.cos(theta), -np.sin(theta), 0],
         [0, np.sin(theta), np.cos(theta), 0],
         [0, 0, 0, 1]
-    ]])
+    ]], dtype = np.float32 )
     R_rotated = R @ R_x 
     return R_rotated
 

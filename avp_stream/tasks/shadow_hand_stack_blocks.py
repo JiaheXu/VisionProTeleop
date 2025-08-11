@@ -169,33 +169,35 @@ class ShadowHandStackBlocks:
 
         # add right hand
         right_hand_start_pose = gymapi.Transform()
-        right_hand_start_pose.p = gymapi.Vec3(-0.2, -0.2, 0.2)
+        right_hand_start_pose.p = gymapi.Vec3(-0.2, -0.2, 0.5)
         right_hand_start_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
         self.right_hand = self.gym.create_actor(env, self.right_hand_asset, right_hand_start_pose, "right_hand", 1, 0, 0)
 
         # add left hand
         left_hand_start_pose = gymapi.Transform()
-        left_hand_start_pose.p = gymapi.Vec3(-0.2, 0.2, 0.2)
+        left_hand_start_pose.p = gymapi.Vec3(-0.2, 0.2, 0.5)
         left_hand_start_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
         self.left_hand = self.gym.create_actor(env, self.left_hand_asset, left_hand_start_pose, "left_hand", 1, 0, 0)
 
+
+        
+        # add table
+        table_pose = gymapi.Transform()
+        table_pose.p = gymapi.Vec3(0.0, 0.0, 0.35)
+        table_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
+        self.table = self.gym.create_actor(env, self.table_asset, table_pose, "table", 1, 0, 0)
+
         # add block1
         block1_start_pose = gymapi.Transform()
-        block1_start_pose.p = gymapi.Vec3(0.0, 0.1, 0.3)
+        block1_start_pose.p = gymapi.Vec3(0.3, 0.1, 0.5)
         block1_start_pose.r = gymapi.Quat().from_euler_zyx(1.57, 1.57, 0)
         self.block1 = self.gym.create_actor(env, self.block1_asset, block1_start_pose, "block1", 1, 0, 0)
 
         # add block2
         block2_start_pose = gymapi.Transform()
-        block2_start_pose.p = gymapi.Vec3(0.0, -0.1, 0.3)
+        block2_start_pose.p = gymapi.Vec3(0.3, -0.1, 0.5)
         block2_start_pose.r = gymapi.Quat().from_euler_zyx(1.57, 1.57, 0)
         self.block2 = self.gym.create_actor(env, self.block2_asset, block2_start_pose, "block2", 1, 0, 0)
-        
-        # add table
-        table_pose = gymapi.Transform()
-        table_pose.p = gymapi.Vec3(0.0, 0.0, 0.0)
-        table_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
-        self.table = self.gym.create_actor(env, self.table_asset, table_pose, "table", 1, 0, 0)
 
         # get array of DOF names
         dof_names = self.gym.get_asset_dof_names(self.right_hand_asset)
