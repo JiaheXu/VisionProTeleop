@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import time
 from pathlib import Path
+import math
 
 from avp_stream import VisionProStreamer
 from avp_stream.utils.isaac_utils import * 
@@ -59,17 +60,18 @@ class ShadowHandStackBlocks:
         # self.sim_params.physx.num_velocity_iterations = 4
         
         # bidex version
-        self.sim_params.physx.num_position_iterations = 8
-        self.sim_params.physx.num_velocity_iterations = 0
-        self.sim_params.physx.contact_offset = 0.002
-        self.sim_params.physx.rest_offset = 0.0
+        # self.sim_params.physx.num_position_iterations = 8
+        # self.sim_params.physx.num_velocity_iterations = 0
+        # self.sim_params.physx.contact_offset = 0.002
+        # self.sim_params.physx.rest_offset = 0.0
 
         # gpt version
-        # self.sim_params.physx.num_position_iterations = 24
-        # self.sim_params.physx.num_velocity_iterations = 12
-        # self.sim_params.physx.contact_offset = 0.002  # smaller global contact offset
-        # self.sim_params.physx.rest_offset = 0.001
-
+        self.sim_params.physx.num_position_iterations = 24
+        self.sim_params.physx.num_velocity_iterations = 12
+        self.sim_params.physx.num_threads = 4
+        self.sim_params.physx.contact_offset = 0.003  # smaller global contact offset
+        self.sim_params.physx.rest_offset = 0.0
+        self.sim_params.dt = 1.0 / 120.0  # higher simulation frequency
         # create sim
         self.sim = self.gym.create_sim(0, 0, gymapi.SIM_PHYSX, self.sim_params)
         if self.sim is None:
@@ -122,7 +124,8 @@ class ShadowHandStackBlocks:
         hand_asset_options.fix_base_link = True
         hand_asset_options.disable_gravity = True
         hand_asset_options.flip_visual_attachments = False
-        hand_asset_options.collapse_fixed_joints = True
+        # hand_asset_options.collapse_fixed_joints = True
+        hand_asset_options.use_mesh_materials = True
         hand_asset_options.thickness = 0.001
         hand_asset_options.angular_damping = 100
         hand_asset_options.linear_damping = 100
@@ -140,20 +143,20 @@ class ShadowHandStackBlocks:
         
         asset_file = 'urdf/objects/cube_multicolor.urdf'
         block_asset_options = gymapi.AssetOptions()
-        block_asset_options.density = 100
+        # block_asset_options.density = 100
         block_asset_options.fix_base_link = False
         self.block1_asset = self.gym.load_asset(self.sim, asset_root, asset_file, block_asset_options)
         self.block2_asset = self.gym.load_asset(self.sim, asset_root, asset_file, block_asset_options)
 
 
         # create table asset
-        table_dims = gymapi.Vec3(1.0, 1.0, 0.05)
+        table_dims = gymapi.Vec3(1.5, 1.5, 0.05)
         table_asset_options = gymapi.AssetOptions()
         table_asset_options.fix_base_link = True
         table_asset_options.flip_visual_attachments = True
         table_asset_options.collapse_fixed_joints = True
         table_asset_options.disable_gravity = True
-        table_asset_options.thickness = 0.001
+        # table_asset_options.thickness = 0.01
         self.table_asset = self.gym.create_box(self.sim, table_dims.x, table_dims.y, table_dims.z, table_asset_options)
 
     def create_env(self):
@@ -169,11 +172,12 @@ class ShadowHandStackBlocks:
         self.envs = []
         self.robot_actor_idxs_over_sim = [] 
         self.env_side_actor_idxs_over_sim = []
-
-
         env = self.gym.create_env(self.sim, env_lower, env_upper, 1)
         self.envs.append(env)
-        
+
+        ############################################
+        # add actors
+        ############################################
         self.env_axis = self.gym.create_actor(env, self.huge_axis, gymapi.Transform() , 'env_axis', 1, 0, 0)
         self.head_axis = self.gym.create_actor(env, self.axis, gymapi.Transform(), 'head', 1, 0, 0)
 
@@ -192,8 +196,6 @@ class ShadowHandStackBlocks:
         left_hand_start_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
         self.left_hand = self.gym.create_actor(env, self.left_hand_asset, left_hand_start_pose, "left_hand", 1, 0, 0)
 
-
-        
         # add table
         table_pose = gymapi.Transform()
         table_pose.p = gymapi.Vec3(0.0, 0.0, 0.55)
@@ -212,6 +214,10 @@ class ShadowHandStackBlocks:
         block2_start_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
         self.block2 = self.gym.create_actor(env, self.block2_asset, block2_start_pose, "block2", 1, 0, 0)
 
+        ############################################
+        # set props
+        ############################################
+        
         # get array of DOF names
         dof_names = self.gym.get_asset_dof_names(self.right_hand_asset)
         print("dof_names: ", dof_names)
@@ -220,34 +226,28 @@ class ShadowHandStackBlocks:
         print("num_dofs: ", num_dofs)
         
         dof_states = np.zeros(num_dofs, dtype=gymapi.DofState.dtype)
-
-        props = self.gym.get_actor_dof_properties(env, self.right_hand)
-
-        props["driveMode"] = tuple([gymapi.DOF_MODE_POS] * num_dofs)
-        props["stiffness"] = tuple([1000.0] * num_dofs)   # high stiffness for following targets
-        props["damping"]   = tuple([1.0] * num_dofs)     # increased damping to avoid oscillation
-        props["effort"]    = tuple([8000.0] * num_dofs)   # strong actuator torque/force for grasping
-
+        dof_types = [self.gym.get_asset_dof_type(self.right_hand_asset, i) for i in range(num_dofs)]
         self.shadow_hand_default_dof_pos = torch.zeros(num_dofs, dtype=torch.float)
 
-        self.gym.set_actor_dof_properties(env, self.right_hand, props)
-        self.gym.set_actor_dof_states(env, self.right_hand, dof_states, gymapi.STATE_ALL)
-        self.gym.set_actor_dof_properties(env, self.left_hand, props)
-        self.gym.set_actor_dof_states(env, self.left_hand, dof_states, gymapi.STATE_ALL)
-
         # apply DOF properties to both hands
-        self.gym.set_actor_dof_properties(env, self.right_hand, props)
+
         self.gym.set_actor_dof_states(env, self.right_hand, dof_states, gymapi.STATE_ALL)
-        self.gym.set_actor_dof_properties(env, self.left_hand, props)
         self.gym.set_actor_dof_states(env, self.left_hand, dof_states, gymapi.STATE_ALL)
 
+        right_hand_shape_props = self.gym.get_actor_dof_properties(env, self.right_hand)
+        
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!")        
+        print("dof_props: ", dof_props)
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("right_hand_shape_props: ", right_hand_shape_props)
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!")
 
         # -------------------- Shape properties for blocks and hands --------------------
-        friction_val = 10.0
-        rolling_friction_val = 1.0
+        friction_val = 20.0
+        rolling_friction_val = 8.0
         torsional_friction_val = 1.0
-        contact_offset_small = 0.0015
-        rest_offset_small = 0.001
+        contact_offset_small = 0.005
+        rest_offset_small = 0.0
         restitution_val = 0.0
 
         # update block1 shapes
@@ -278,31 +278,37 @@ class ShadowHandStackBlocks:
         self.gym.set_actor_rigid_shape_properties(env, self.block2, block2_shape_props)
 
         # update right hand shape props
-        right_hand_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.right_hand)
-        for prop in right_hand_shape_props:
-            prop.friction = friction_val
-            if hasattr(prop, "rollingFriction"):
-                prop.rollingFriction = rolling_friction_val
-            if hasattr(prop, "torsionalFriction"):
-                prop.torsionalFriction = torsional_friction_val
-            prop.restitution = restitution_val
-            prop.contact_offset = contact_offset_small
-            prop.rest_offset = rest_offset_small
-        self.gym.set_actor_rigid_shape_properties(env, self.right_hand, right_hand_shape_props)
+        # right_hand_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.right_hand)
 
-        # update left hand shape props
-        left_hand_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.left_hand)
-        for prop in left_hand_shape_props:
-            prop.friction = friction_val
-            if hasattr(prop, "rollingFriction"):
-                prop.rollingFriction = rolling_friction_val
-            if hasattr(prop, "torsionalFriction"):
-                prop.torsionalFriction = torsional_friction_val
-            prop.restitution = restitution_val
-            prop.contact_offset = contact_offset_small
-            prop.rest_offset = rest_offset_small
-        self.gym.set_actor_rigid_shape_properties(env, self.left_hand, left_hand_shape_props)
 
+        # for prop in right_hand_shape_props:
+        #     prop.friction = friction_val
+        #     if hasattr(prop, "rollingFriction"):
+        #         prop.rollingFriction = rolling_friction_val
+        #     if hasattr(prop, "torsionalFriction"):
+        #         prop.torsionalFriction = torsional_friction_val
+        #     prop.restitution = restitution_val
+        #     prop.contact_offset = contact_offset_small
+        #     prop.rest_offset = rest_offset_small
+        # self.gym.set_actor_rigid_shape_properties(env, self.right_hand, right_hand_shape_props)
+
+        # left_hand_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.left_hand)
+        # for prop in left_hand_shape_props:
+        #     prop.friction = friction_val
+        #     if hasattr(prop, "rollingFriction"):
+        #         prop.rollingFriction = rolling_friction_val
+        #     if hasattr(prop, "torsionalFriction"):
+        #         prop.torsionalFriction = torsional_friction_val
+        #     prop.restitution = restitution_val
+        #     prop.contact_offset = contact_offset_small
+        #     prop.rest_offset = rest_offset_small
+        # self.gym.set_actor_rigid_shape_properties(env, self.left_hand, left_hand_shape_props)
+        
+
+
+#1 check solver param,
+#2 check PD control params
+#3 script policy, use a policy that can pickup thing, check the force on tip
 
 
     def initialize_tensors(self): 

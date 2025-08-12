@@ -179,10 +179,15 @@ class IsaacVisualizer:
 
     def run(self):
 
-        while True:
-            latest = self.transfer( self.s.latest )
 
-        # data = np.load("test.npy", allow_pickle = True)
+        # while True:
+        data = []
+        for idx in range(1000):
+            latest = copy.deepcopy(self.s.latest)
+            data.append(latest)
+            latest = self.transfer( latest )
+
+        # data = np.load("stack.npy", allow_pickle = True)
         # for latest in data:
         #     latest = self.transfer(latest)
 
@@ -197,7 +202,9 @@ class IsaacVisualizer:
             latest['right_action'] = right_qpos
             latest['left_action'] = left_qpos
             self.env.step(np2tensor(latest, self.env.device))
-            time.sleep(0.02)
+            time.sleep(0.01)
+            print("idx: ", idx)
+        np.save("stack.npy", data, allow_pickle=True)
 
 
 # python3 example/retarget_debug_node.py \

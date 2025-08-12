@@ -73,7 +73,7 @@ class IsaacVisualizer:
     def __init__(self, args): 
         # self.s = VisionProStreamer(args.ip, args.record)
         # self.env = IsaacVisualizerEnv(args)
-
+        
         args.task = "ShadowHandStackBlocks"
         # args.task = "ShadowHandBase" 
         self.env = eval(args.task)(args)
@@ -102,14 +102,13 @@ class IsaacVisualizer:
         right_wrist = transformations['right_wrist_sim'] #@ VISIONOS_RIGHT_HAND_TO_LEAP 
         right_fingers = transformations['right_fingers']
 
-        right_wrist_rot = right_wrist.numpy()[0][0:3,0:3]
+        right_wrist_rot = right_wrist[0][0:3,0:3]
         # print("right_wrist_rot: ", right_wrist_rot.shape)
         keypoint_3d = []
         keypoint_3d.append( right_wrist[0][0:3,3] )
         for idx in APPLE2MEDIAPIPE:
             keypoint_3d.append( right_fingers[idx][0:3,3] )  
-        keypoint_3d = torch.stack( keypoint_3d )
-        keypoint_3d = keypoint_3d.numpy()
+        keypoint_3d = np.array( keypoint_3d )
         keypoint_3d = keypoint_3d.reshape(21,-1)
         keypoint_3d_world = copy.deepcopy(keypoint_3d)
         # print("keypoint_3d: ", keypoint_3d.shape)
@@ -137,14 +136,13 @@ class IsaacVisualizer:
         left_wrist = transformations['left_wrist_sim'] #@ VISIONOS_LEFT_HAND_TO_LEAP 
         left_fingers = transformations['left_fingers']
 
-        left_wrist_rot = left_wrist.numpy()[0][0:3,0:3]
+        left_wrist_rot = left_wrist[0][0:3,0:3]
 
         keypoint_3d = []
         keypoint_3d.append( left_wrist[0][0:3,3] )
         for idx in APPLE2MEDIAPIPE:
             keypoint_3d.append( left_fingers[idx][0:3,3] )  
-        keypoint_3d = torch.stack( keypoint_3d )
-        keypoint_3d = keypoint_3d.numpy()
+        keypoint_3d = np.array( keypoint_3d )
         keypoint_3d = keypoint_3d.reshape(21,-1)
         keypoint_3d_world = copy.deepcopy(keypoint_3d)
         keypoint_3d = keypoint_3d - keypoint_3d[0:1, :]
@@ -159,44 +157,56 @@ class IsaacVisualizer:
         qpos = self.left_retargeting.retarget(ref_value)
         return qpos
 
-    def transfer(self, original_transformation):
+    def transfer(self, transf):
 
-        transformations = copy.deepcopy( original_transformation)
+        transformations = {}
 
-        transformations['head'] = torch.from_numpy(ROT_Z_) @ transformations['head'] @ torch.from_numpy(ROT_Z)
-        transformations['right_wrist'] = torch.from_numpy(ROT_Z_)  @ transformations['right_wrist'] # raw apple tranform rule
-        transformations['left_wrist'] = torch.from_numpy(ROT_Z_)  @ transformations['left_wrist'] # raw apple tranform rule
+        transformations['head'] = ROT_Z_ @ transf['head'] @ ROT_Z
+        transformations['right_wrist'] = ROT_Z_ @ transf['right_wrist'] # raw apple tranform rule
+        transformations['left_wrist'] = ROT_Z_ @ transf['left_wrist'] # raw apple tranform rule
+        # print("transformations['right_wrist']: ", transformations['right_wrist'])
+        # print("torch.from_numpy( ROT_X @ ROT_Y_): ", torch.from_numpy( ROT_X @ ROT_Y_))
+        transformations['right_wrist_sim'] = transformations['right_wrist'] @ ROT_X @ ROT_Y_ # unified sim tranform rule
+        transformations['left_wrist_sim'] = transformations['left_wrist'] @ ROT_X @ ROT_Y # unified sim tranform rule
 
-        transformations['right_wrist_sim'] = transformations['right_wrist'] @ torch.from_numpy( ROT_X @ ROT_Y_) # unified sim tranform rule
-        transformations['left_wrist_sim'] = transformations['left_wrist'] @ torch.from_numpy( ROT_X @ ROT_Y) # unified sim tranform rule
-
-        right_fingers = torch.cat([transformations['right_wrist'] @ finger for finger in transformations['right_fingers']], dim = 0)
+        right_fingers = np.concatenate([transformations['right_wrist'] @ finger for finger in transf['right_fingers']], axis = 0)
         transformations['right_fingers'] = right_fingers
 
-        left_fingers = torch.cat([transformations['left_wrist'] @ finger for finger in transformations['left_fingers']], dim = 0)
+        left_fingers = np.concatenate([transformations['left_wrist'] @ finger for finger in transf['left_fingers']], axis = 0)
         transformations['left_fingers'] = left_fingers
 
         return transformations
 
     def run(self):
+
+
+        # while True:
+
+        # data = []
+        # for idx in range(1000):
+        #     latest = copy.deepcopy(self.s.latest)
+        #     data.append(latest)
+        #     latest = self.transfer( latest )
         data = np.load("test.npy", allow_pickle = True)
-        for j in range(1):
-            for i in range(1000):
-                # time.sleep(0.05)
+        # data = np.load("stack_xml.npy", allow_pickle = True)
+        for latest in data:
+            latest = self.transfer(latest)
 
-                latest = self.transfer( data[i] )
-                transformations = copy.deepcopy(latest)
+            transformations = copy.deepcopy(latest)
 
-                right_qpos = self.right_hand_retarget(transformations)
-                left_qpos = self.left_hand_retarget(transformations)
-                # print("right_qpos: ", right_qpos)
-                # print("left_qpos: ", left_qpos)                
-                action = np.concatenate( [right_qpos, left_qpos] )
-                # print("action: ", action.shape)
-                latest['right_action'] = torch.from_numpy(right_qpos)
-                latest['left_action'] = torch.from_numpy(left_qpos)
-                self.env.step(np2tensor(latest, self.env.device))
-            # np.save("test.npy", data, allow_pickle=True)
+            right_qpos = self.right_hand_retarget(transformations)
+            left_qpos = self.left_hand_retarget(transformations)
+            # print("right_qpos: ", right_qpos)
+            # print("left_qpos: ", left_qpos)                
+            action = np.concatenate( [right_qpos, left_qpos] )
+            # print("action: ", action.shape)
+            latest['right_action'] = right_qpos
+            latest['left_action'] = left_qpos
+            self.env.step(np2tensor(latest, self.env.device))
+            time.sleep(0.01)
+        #     print("idx: ", idx)
+        # np.save("stack.npy", data, allow_pickle=True)
+
 
 # python3 example/retarget_debug_node.py \
 #   --robot-name shadow \
@@ -206,7 +216,7 @@ class IsaacVisualizer:
 
 def np2tensor(data: Dict[str, np.ndarray], device) -> Dict[str, torch.Tensor]:  
     for key in data.keys():
-        data[key] = torch.tensor(data[key].clone().detach(), dtype = torch.float32, device = device)
+        data[key] = torch.tensor(data[key], dtype = torch.float32, device = device)
     return data
 
 

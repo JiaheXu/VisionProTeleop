@@ -3,7 +3,7 @@
     <body name="robot0:hand mount" pos="0.0 0.0 0.0" euler="0 0 0">
         <inertial mass="0.1" pos="0 0 0" diaginertia="0.001 0.001 0.001"></inertial>
         
-        <body name="robot0:forearm" pos="0 0 0" euler="0 0 1.57">
+    <body childclass="robot0:asset_class" name="robot0:forearm" pos="0 0 0" euler="0 0 1.57">
             <inertial pos="0.001 -0.002 0.034" quat="0.982 -0.016 0 -0.188" mass="0.1" diaginertia="0.01 0.01 0.0075"></inertial>
             <!-- <geom class="robot0:D_Vizual" pos="0 0.01 -0.216" name="robot0:V_forearm" mesh="robot0:forearm" euler="0 0 1.57"></geom> -->
             <!-- <geom class="robot0:DC_Hand" name="robot0:C_forearm" type="mesh" mesh="robot0:forearm_cvx" pos="0 0.01 -0.216" euler="0 0 1.57" rgba="0.4 0.5 0.6 0.7"></geom> -->
@@ -130,7 +130,7 @@
                     </body>
                     
                     <body name="robot0:thbase" pos="0.034 -0.009 0.029" axisangle="0 1 0 0.785">
-                        <inertial pos="0 0 0" mass="0.01" diaginertia="1e-05 1e-05 1e-05"></inertial>
+                        <inertial pos="0 0 0" mass="0.08" diaginertia="1e-05 1e-05 1e-05"></inertial>
                         <joint name="robot0:THJ4" type="hinge" pos="0 0 0" axis="0 0 -1" range="-1.047 1.047" user="1121"></joint>
                         <geom name="robot0:V_thbase" type="box" group="1" pos="0 0 0" size="0.001 0.001 0.001"></geom>
                         <body name="robot0:thproximal" pos="0 0 0">
@@ -139,7 +139,7 @@
                             <geom class="robot0:D_Vizual" name="robot0:V_thproximal" mesh="robot0:TH3_z"></geom>
                             <geom class="robot0:DC_Hand" name="robot0:C_thproximal" type="capsule" pos="0 0 0.019" size="0.013 0.019" rgba="0.4 0.5 0.6 0.1"></geom>
                             <body name="robot0:thhub" pos="0 0 0.038">
-                                <inertial pos="0 0 0" mass="0.002" diaginertia="1e-05 1e-05 1e-05"></inertial>
+                                <inertial pos="0 0 0" mass="0.012" diaginertia="1e-05 1e-05 1e-05"></inertial>
                                 <joint name="robot0:THJ2" type="hinge" pos="0 0 0" axis="1 0 0" range="-0.209 0.209" user="1119"></joint>
                                 <geom name="robot0:V_thhub" type="box" group="1" pos="0 0 0" size="0.001 0.001 0.001"></geom>
                                 <body name="robot0:thmiddle" pos="0 0 0">

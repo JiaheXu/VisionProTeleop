@@ -1,0 +1,61 @@
+!!!!!!!!!!!!!!!!
+hand_dof_props:  [
+( True, -0.35, 0.35, 1, 100.,   0.9 ,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.9 ,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.72,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.72,   1., 0.1, 0., 0.) 
+( True, -0.35, 0.35, 1, 100.,   0.9 ,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.9 ,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.72,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.72,   1., 0.1, 0., 0.) 
+( True, -0.35, 0.35, 1, 100.,   0.9 ,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.9 ,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.72,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.72,   1., 0.1, 0., 0.) 
+( True,  0.  , 0.79, 1, 100.,   0.9 ,   1., 0.1, 0., 0.) 
+( True, -0.35, 0.35, 1, 100.,   0.9 ,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.9 ,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.72,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.57, 1, 100.,   0.72,   1., 0.1, 0., 0.) 
+( True, -1.05, 1.05, 1, 100.,   2.37,   1., 0.1, 0., 0.) 
+( True,  0.  , 1.22, 1, 100.,   1.45,   1., 0.1, 0., 0.) 
+( True, -0.21, 0.21, 1, 100.,   0.99,   1., 0.1, 0., 0.) 
+( True, -0.52, 0.52, 1, 100.,   0.99,   1., 0.1, 0., 0.) 
+( True, -1.57, 0.  , 1, 100.,   0.81,   1., 0.1, 0., 0.)]
+!!!!!!!!!!!!!!!! goal
+
+# what we have
+[(False, 0., 0., 1, 100., 0.9   , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.9   , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.7245, 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.7245, 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.9   , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.9   , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.7245, 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.7245, 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.9   , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.9   , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.7245, 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.7245, 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.9   , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.9   , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.9   , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.7245, 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.7245, 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 2.3722, 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 1.45  , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.99  , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.99  , 100., 5., 0., 0.)
+ (False, 0., 0., 1, 100., 0.81  ,   1., 1., 0., 0.)]
+ 
+ 
+  hasLimits - Flags whether the DOF has limits.
+    lower - lower limit of DOF. In radians or meters
+    upper - upper limit of DOF. In radians or meters
+    driveMode - Drive mode for the DOF. See GymDofDriveMode.
+    velocity - Maximum velocity of DOF. In Radians/s, or m/s
+    effort - Maximum effort of DOF. in N or Nm.
+    stiffness - DOF stiffness.
+    damping - DOF damping.
+    friction - DOF friction coefficient, a generalized friction force is calculated as DOF force multiplied by friction.
+    armature - DOF armature, a value added to the diagonal of the joint-space inertia matrix. Physically, it corresponds to the rotating part of a motor - which increases the inertia of the joint, even when the rigid bodies connected by the joint can have very little inertia. Larger values could improve simulation stability.
