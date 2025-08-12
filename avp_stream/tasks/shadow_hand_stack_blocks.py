@@ -224,9 +224,9 @@ class ShadowHandStackBlocks:
         props = self.gym.get_actor_dof_properties(env, self.right_hand)
 
         props["driveMode"] = tuple([gymapi.DOF_MODE_POS] * num_dofs)
-        props["stiffness"] = tuple([100.0] * num_dofs)   # high stiffness for following targets
+        props["stiffness"] = tuple([1000.0] * num_dofs)   # high stiffness for following targets
         props["damping"]   = tuple([1.0] * num_dofs)     # increased damping to avoid oscillation
-        props["effort"]    = tuple([100.0] * num_dofs)   # strong actuator torque/force for grasping
+        props["effort"]    = tuple([8000.0] * num_dofs)   # strong actuator torque/force for grasping
 
         self.shadow_hand_default_dof_pos = torch.zeros(num_dofs, dtype=torch.float)
 
