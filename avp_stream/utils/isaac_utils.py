@@ -100,7 +100,7 @@ def refresh_tensors(gym, sim):
     gym.refresh_mass_matrix_tensors(sim)
 
 def setup_viewer_camera(gym, env, viewer): 
-    cam_pos = gymapi.Vec3(-0.05, 0.0, 1.55)
+    cam_pos = gymapi.Vec3(-0.35, 0.0, 1.35)
     cam_target = gymapi.Vec3(0.5, 0.0, 0.4)
     middle_env = env
     gym.viewer_camera_look_at(viewer, middle_env, cam_pos, cam_target)

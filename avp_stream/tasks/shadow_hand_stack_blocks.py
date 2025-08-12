@@ -53,6 +53,11 @@ class ShadowHandStackBlocks:
         # configure sim
         self.sim_params = default_sim_params(use_gpu = True if self.device == 'cuda:0' else False) 
 
+        self.sim_params.physx.solver_type = 1  # TGS solver (more stable for grasp)
+        self.sim_params.physx.num_position_iterations = 12
+        self.sim_params.physx.num_velocity_iterations = 4
+        self.sim_params.physx.contact_offset = 0.005
+        self.sim_params.physx.rest_offset = 0.0
         # create sim
         self.sim = self.gym.create_sim(0, 0, gymapi.SIM_PHYSX, self.sim_params)
         if self.sim is None:
@@ -123,7 +128,7 @@ class ShadowHandStackBlocks:
         
         asset_file = 'urdf/objects/cube_multicolor.urdf'
         block_asset_options = gymapi.AssetOptions()
-        block_asset_options.density = 0.1
+        block_asset_options.density = 1.0
         block_asset_options.fix_base_link = False
         block_asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
         self.block1_asset = self.gym.load_asset(self.sim, asset_root, asset_file, block_asset_options)
@@ -165,13 +170,13 @@ class ShadowHandStackBlocks:
 
         # add right hand
         right_hand_start_pose = gymapi.Transform()
-        right_hand_start_pose.p = gymapi.Vec3(-0.2, -0.2, 0.5)
+        right_hand_start_pose.p = gymapi.Vec3(-0.2, -0.2, 0.55)
         right_hand_start_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
         self.right_hand = self.gym.create_actor(env, self.right_hand_asset, right_hand_start_pose, "right_hand", 1, 0, 0)
 
         # add left hand
         left_hand_start_pose = gymapi.Transform()
-        left_hand_start_pose.p = gymapi.Vec3(-0.2, 0.2, 0.5)
+        left_hand_start_pose.p = gymapi.Vec3(-0.2, 0.2, 0.55)
         left_hand_start_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
         self.left_hand = self.gym.create_actor(env, self.left_hand_asset, left_hand_start_pose, "left_hand", 1, 0, 0)
 
@@ -179,7 +184,7 @@ class ShadowHandStackBlocks:
         
         # add table
         table_pose = gymapi.Transform()
-        table_pose.p = gymapi.Vec3(0.0, 0.0, 0.35)
+        table_pose.p = gymapi.Vec3(0.0, 0.0, 0.45)
         table_pose.r = gymapi.Quat().from_euler_zyx(0, 0, 0)
         self.table = self.gym.create_actor(env, self.table_asset, table_pose, "table", 1, -1, 0)
 
@@ -230,10 +235,10 @@ class ShadowHandStackBlocks:
             #gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS, gymapi.DOF_MODE_POS
         )
 
-        props["stiffness"] = ( 30.0 ) * 22 
+        props["stiffness"] = ( 10000.0 ) * 22 
 
         props["damping"] = ( 0.1 ) * 22
-
+        props['effort'] = ( 200.0 ) * 22
         # props["damping"] = (
         #     0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
         #     0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
@@ -249,23 +254,42 @@ class ShadowHandStackBlocks:
         self.gym.set_actor_dof_states(env, self.left_hand, dof_states, gymapi.STATE_ALL)
 
 
+        friction = 10.0
 
         block1_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.block1)
-        block1_shape_props[0].friction = 1.0
+        for prop in block1_shape_props:
+            prop.friction = friction
+            prop.contact_offset = 0.01
+            prop.rest_offset = 0.0
+            # prop.material.stiffness = 10000.0
+            # prop.material.damping = 100.0
         self.gym.set_actor_rigid_shape_properties(env, self.block1, block1_shape_props)
 
         block2_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.block2)
-        block2_shape_props[0].friction = 1.0
+        for prop in block2_shape_props:
+            prop.friction = friction
+            prop.contact_offset = 0.01
+            prop.rest_offset = 0.0
+            # prop.material.stiffness = 10000.0
+            # prop.material.damping = 100.0
         self.gym.set_actor_rigid_shape_properties(env, self.block2, block2_shape_props)
 
         right_hand_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.right_hand)
-        for object_shape_prop in right_hand_shape_props:
-            object_shape_prop.friction = 1.0
+        for prop in right_hand_shape_props:
+            prop.friction = friction
+            prop.contact_offset = 0.01
+            prop.rest_offset = 0.0
+            # prop.material.stiffness = 10000.0
+            # prop.material.damping = 100.0
         self.gym.set_actor_rigid_shape_properties(env, self.right_hand, right_hand_shape_props)
 
         left_hand_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.left_hand)
-        for object_shape_prop in left_hand_shape_props:
-            object_shape_prop.friction = 1.0
+        for prop in left_hand_shape_props:
+            prop.friction = friction
+            prop.contact_offset = 0.01
+            prop.rest_offset = 0.0
+            # prop.material.stiffness = 10000.0
+            # prop.material.damping = 100.0
         self.gym.set_actor_rigid_shape_properties(env, self.left_hand, left_hand_shape_props)
 
 
