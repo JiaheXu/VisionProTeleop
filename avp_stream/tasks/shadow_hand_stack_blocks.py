@@ -229,53 +229,93 @@ class ShadowHandStackBlocks:
         dof_types = [self.gym.get_asset_dof_type(self.right_hand_asset, i) for i in range(num_dofs)]
         self.shadow_hand_default_dof_pos = torch.zeros(num_dofs, dtype=torch.float)
 
-        # apply DOF properties to both hands
+        # change props
+
+        props = self.gym.get_actor_dof_properties(env, self.right_hand)
+
+        # almost works but high effort
+        # props["stiffness"] = tuple([1000.0] * num_dofs)   # high stiffness for following targets
+        # props["damping"]   = tuple([0.0] * num_dofs)     # increased damping to avoid oscillation
+        # props["effort"]    = tuple([1000.0] * num_dofs)   # strong actuator torque/force for grasping
+
+        # props["stiffness"] = tuple([10.0] * num_dofs)   # high stiffness for following targets
+        # props["stiffness"][-5:] = 1000.0
+        # props["effort"][-5:] = 1000.0
+
+
+        props["effort"]    = tuple([5.0] * num_dofs)
+        props["stiffness"] = tuple([10.0] * num_dofs)   # high stiffness for following targets
+        
+        props["stiffness"][-5:-1] = 800.0
+        props["effort"][-5:-1] = 400.0 
+        props["damping"][-5:-1] = 10.0 
+
+        # props["stiffness"][-5] = 800.0
+        # props["effort"][-5] = 400.0  
+
+        # props["stiffness"][-4] = 800.0
+        # props["effort"][-4] = 400.0  
+
+        # props["stiffness"][-3] = 800.0
+        # props["effort"][-3] = 400.0  
+
+        # props["stiffness"][-2] = 800.0
+        # props["effort"][-2] = 400.0  
+
+        # props["stiffness"][-4:-2] = 800.0
+        # props["effort"][-4:-2] = 400.0  
+
+        # props["stiffness"][-2] = 100.0
+        # props["effort"][-2] = 10.0
+
+        self.gym.set_actor_dof_properties(env, self.right_hand, props)
+        self.gym.set_actor_dof_properties(env, self.left_hand, props)
 
         self.gym.set_actor_dof_states(env, self.right_hand, dof_states, gymapi.STATE_ALL)
         self.gym.set_actor_dof_states(env, self.left_hand, dof_states, gymapi.STATE_ALL)
 
         right_hand_shape_props = self.gym.get_actor_dof_properties(env, self.right_hand)
-        
+        left_hand_shape_props = self.gym.get_actor_dof_properties(env, self.left_hand)        
         print("!!!!!!!!!!!!!!!!!!!!!!!!!")        
-        print("dof_props: ", dof_props)
+        print("left_hand_shape_props: ", left_hand_shape_props)
         print("!!!!!!!!!!!!!!!!!!!!!!!!!")
         print("right_hand_shape_props: ", right_hand_shape_props)
         print("!!!!!!!!!!!!!!!!!!!!!!!!!")
 
         # -------------------- Shape properties for blocks and hands --------------------
-        friction_val = 20.0
-        rolling_friction_val = 8.0
-        torsional_friction_val = 1.0
-        contact_offset_small = 0.005
-        rest_offset_small = 0.0
-        restitution_val = 0.0
+        # friction_val = 20.0
+        # rolling_friction_val = 8.0
+        # torsional_friction_val = 1.0
+        # contact_offset_small = 0.005
+        # rest_offset_small = 0.0
+        # restitution_val = 0.0
 
-        # update block1 shapes
-        block1_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.block1)
-        for prop in block1_shape_props:
-            prop.friction = friction_val
-            # small rolling/torsional friction helps fingers keep the block from spinning out
-            if hasattr(prop, "rollingFriction"):
-                prop.rollingFriction = rolling_friction_val
-            if hasattr(prop, "torsionalFriction"):
-                prop.torsionalFriction = torsional_friction_val
-            prop.restitution = restitution_val
-            prop.contact_offset = contact_offset_small
-            prop.rest_offset = rest_offset_small
-        self.gym.set_actor_rigid_shape_properties(env, self.block1, block1_shape_props)
+        # # update block1 shapes
+        # block1_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.block1)
+        # for prop in block1_shape_props:
+        #     prop.friction = friction_val
+        #     # small rolling/torsional friction helps fingers keep the block from spinning out
+        #     if hasattr(prop, "rollingFriction"):
+        #         prop.rollingFriction = rolling_friction_val
+        #     if hasattr(prop, "torsionalFriction"):
+        #         prop.torsionalFriction = torsional_friction_val
+        #     prop.restitution = restitution_val
+        #     prop.contact_offset = contact_offset_small
+        #     prop.rest_offset = rest_offset_small
+        # self.gym.set_actor_rigid_shape_properties(env, self.block1, block1_shape_props)
 
-        # update block2 shapes (if present)
-        block2_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.block2)
-        for prop in block2_shape_props:
-            prop.friction = friction_val
-            if hasattr(prop, "rollingFriction"):
-                prop.rollingFriction = rolling_friction_val
-            if hasattr(prop, "torsionalFriction"):
-                prop.torsionalFriction = torsional_friction_val
-            prop.restitution = restitution_val
-            prop.contact_offset = contact_offset_small
-            prop.rest_offset = rest_offset_small
-        self.gym.set_actor_rigid_shape_properties(env, self.block2, block2_shape_props)
+        # # update block2 shapes (if present)
+        # block2_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.block2)
+        # for prop in block2_shape_props:
+        #     prop.friction = friction_val
+        #     if hasattr(prop, "rollingFriction"):
+        #         prop.rollingFriction = rolling_friction_val
+        #     if hasattr(prop, "torsionalFriction"):
+        #         prop.torsionalFriction = torsional_friction_val
+        #     prop.restitution = restitution_val
+        #     prop.contact_offset = contact_offset_small
+        #     prop.rest_offset = rest_offset_small
+        # self.gym.set_actor_rigid_shape_properties(env, self.block2, block2_shape_props)
 
         # update right hand shape props
         # right_hand_shape_props = self.gym.get_actor_rigid_shape_properties(env, self.right_hand)

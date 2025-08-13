@@ -204,7 +204,7 @@ class IsaacVisualizer:
             self.env.step(np2tensor(latest, self.env.device))
             time.sleep(0.01)
             print("idx: ", idx)
-        np.save("stack.npy", data, allow_pickle=True)
+        np.save("position.npy", data, allow_pickle=True)
 
 
 # python3 example/retarget_debug_node.py \

@@ -187,7 +187,7 @@ class IsaacVisualizer:
         #     latest = copy.deepcopy(self.s.latest)
         #     data.append(latest)
         #     latest = self.transfer( latest )
-        data = np.load("test.npy", allow_pickle = True)
+        data = np.load("position.npy", allow_pickle = True)
         # data = np.load("stack_xml.npy", allow_pickle = True)
         for latest in data:
             latest = self.transfer(latest)
